@@ -1,32 +1,67 @@
-# This is a basic workflow that is manually triggered
+name: ArgoCD Automation
 
-name: Manual workflow
-
-# Controls when the action will run. Workflow runs when manually triggered using the UI
-# or API.
 on:
-  workflow_dispatch:
-    # Inputs the workflow accepts.
-    inputs:
-      name:
-        # Friendly description to be shown in the UI instead of 'name'
-        description: 'Person to greet'
-        # Default value if no value is explicitly provided
-        default: 'World'
-        # Input has to be provided for the workflow to run
-        required: true
-        # The data type of the input
-        type: string
+  workflow_dispatch: # Allow manual triggering
+  # Optionally, you can trigger on push to a specific branch or on a schedule.
+  # push:
+  #   branches:
+  #     - main
+  # schedule:
+  #   - cron: '0 0 * * *' # Run daily at midnight
 
-# A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
-  # This workflow contains a single job called "greet"
-  greet:
-    # The type of runner that the job will run on
+  run_argocd_commands:
     runs-on: ubuntu-latest
 
-    # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
-    # Runs a single command using the runners shell
-    - name: Send greeting
-      run: echo "Hello ${{ inputs.name }}"
+    - name: Checkout Repository
+      uses: actions/checkout@v3
+
+    - name: Set up AWS CLI
+      uses: aws-actions/configure-aws-credentials@v2
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ secrets.AWS_REGION }}
+
+    - name: Install ArgoCD CLI
+      run: |
+        curl -sSL -o argocd-linux-amd64 https://github.com/argoproj/argo-cd/releases/latest/download/argocd-linux-amd64
+        chmod +x argocd-linux-amd64
+        sudo mv argocd-linux-amd64 /usr/local/bin/argocd
+
+    - name: Install kubectl
+      uses: azure/setup-kubectl@v3
+      with:
+        version: 'v1.31.0' # Or your desired kubectl version
+
+    - name: Get EKS Credentials
+      run: |
+        aws eks update-kubeconfig --name ${{ secrets.EKS_CLUSTER_NAME }} --region ${{ secrets.AWS_REGION }}
+
+    - name: Wait for ArgoCD URL to be available
+      run: |
+        while true; do
+          if kubectl get svc argocd-server -n argocd -o jsonpath='{.status.loadBalancer.ingress[0].hostname}'; then
+            echo "ArgoCD URL available."
+            break;
+          else
+            echo "Waiting for ArgoCD URL..."
+            sleep 10
+          fi
+        done
+      id: argocd_url
+
+    - name: Login to ArgoCD
+      run: |
+        argocd login ${{ steps.argocd_url.outputs.stdout }} --username admin --password ${{ secrets.ARGOCD_ADMIN_PASSWORD }} --insecure
+
+    - name: Run ArgoCD Commands
+      run: |
+        # Example ArgoCD commands:
+        argocd app list
+        # argocd app create my-app --repo https://github.com/my-org/my-repo.git --path my-app-path --dest-server https://kubernetes.default.svc --dest-namespace my-namespace
+        # argocd app sync my-app
+        # argocd app get my-app
+        # argocd app delete my-app --cascade
+        # Add your desired ArgoCD commands here.
