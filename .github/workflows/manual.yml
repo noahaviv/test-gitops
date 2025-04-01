@@ -28,6 +28,9 @@ jobs:
         argocd app create ingress-controller --repo https://github.com/nizanim2/docs.git --path helm-charts/ingress-nginx --dest-server https://kubernetes.default.svc --dest-namespace ingress-controller --sync-option CreateNamespace=true
         argocd app sync ingress-controller
         argocd app create kube-prometheus-stack --repo https://github.com/nizanim2/docs.git --path helm-charts/kube-prometheus-stack --dest-server https://kubernetes.default.svc --dest-namespace prometheus-stack --sync-option CreateNamespace=true
+        argocd app sync kube-prometheus-stack
+        argocd app create statuspage --repo https://github.com/nizanim2/docs.git --path helm-charts/statuspage-helm --dest-server https://kubernetes.default.svc --dest-namespace statuspage --sync-option CreateNamespace=true
+        argocd app sync statuspage
         # argocd app get my-app
         # argocd app delete my-app --cascade
         # Add your desired ArgoCD commands here.
