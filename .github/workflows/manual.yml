@@ -24,9 +24,10 @@ jobs:
     - name: Run ArgoCD Commands
       run: |
         # Example ArgoCD commands:
-        argocd app list
-        # argocd app create my-app --repo https://github.com/my-org/my-repo.git --path my-app-path --dest-server https://kubernetes.default.svc --dest-namespace my-namespace
-        # argocd app sync my-app
+        argocd repo add https://github.com/nizanim2/docs.git
+        argocd app create ingress-controller --repo https://github.com/nizanim2/docs.git --path helm-charts/ingress-nginx --dest-server https://kubernetes.default.svc --dest-namespace ingress-controller --sync-option CreateNamespace=true
+        argocd app sync ingress-controller
+        argocd app create kube-prometheus-stack --repo https://github.com/nizanim2/docs.git --path helm-charts/kube-prometheus-stack --dest-server https://kubernetes.default.svc --dest-namespace prometheus-stack --sync-option CreateNamespace=true
         # argocd app get my-app
         # argocd app delete my-app --cascade
         # Add your desired ArgoCD commands here.
