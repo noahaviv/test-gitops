@@ -19,7 +19,7 @@ jobs:
 
     - name: Login to ArgoCD
       run: |
-        argocd login ${{ variables.url }} --username admin --password ${{ secrets.ARGOCD_ADMIN_PASSWORD }} --insecure
+        argocd login ${{ variables.URL }} --username admin --password ${{ secrets.ARGOCD_ADMIN_PASSWORD }} --insecure
 
     - name: Run ArgoCD Commands
       run: |
